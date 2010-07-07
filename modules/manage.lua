@@ -35,8 +35,12 @@ function Manage:GetBoolConfigValue(itemID, key)
 	return QuickAuctions.db.profile[key].default
 end
 
+function Manage:GetGroupConfigValue(groupName, key)
+	return groupName and QuickAuctions.db.profile[key][groupName] or QuickAuctions.db.profile[key].default
+end
+
 function Manage:GetConfigValue(itemID, key)
-	return reverseLookup[itemID] and QuickAuctions.db.profile[key][reverseLookup[itemID]] or QuickAuctions.db.profile[key].default
+	return self:GetGroupConfigValue(reverseLookup[itemID], key)
 end
 
 function Manage:UpdateReverseLookup()
@@ -646,7 +650,51 @@ function Manage:QA_STOP_SCAN(event, interrupted)
 	end
 end
 
+function QAAPI:GetItemGroup(itemLink)
+	itemLink = QuickAuctions:GetSafeLink(itemLink)
+	if( not itemLink ) then return end
+	Manage:UpdateReverseLookup()
+	return reverseLookup[itemLink ]
+end
 
+function QAAPI:GetGroups()
+	groups = {}
+	for group, items in pairs(QuickAuctions.db.global.groups) do
+		if( not QuickAuctions.db.profile.groupStatus[group] ) then
+			groups[group] = true
+		end
+	end
+	return groups
+end
 
+function QAAPI:GetItemsInGroup(groupName)
+	local items = {}
+	
+	if QuickAuctions.db.global.groups[groupName] ~= nil then
+		for link, bool in pairs(QuickAuctions.db.global.groups[groupName]) do
+			if bool then
+				items[link] = bool
+			end
+		end
+	end
 
+	return items
+end
 
+function QAAPI:GetGroupThreshold(groupName)
+	return Manage:GetGroupConfigValue(groupName, 'threshold')
+end
+
+function QAAPI:GetGroupPostCap(groupName)
+	return Manage:GetGroupConfigValue(groupName, 'postCap')
+end
+
+function QAAPI:GetGroupPerAuction(groupName)
+	return Manage:GetGroupConfigValue(groupName, 'perAuction')
+end
+
+function QAAPI:SetGroupThreshold(groupName, value)
+	if value ~= nil and value >= 0 then
+		QuickAuctions.db.profile['threshold'][groupName] = value
+	end
+end
