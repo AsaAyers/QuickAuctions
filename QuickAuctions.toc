@@ -33,3 +33,4 @@ modules\config.lua
 modules\tradeskills.lua
 modules\mail.lua
 modules\status.lua
+modules\api.lua
