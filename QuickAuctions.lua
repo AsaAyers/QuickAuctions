@@ -317,8 +317,14 @@ function QuickAuctions:AuctionHouseLoaded()
 end
 
 function QuickAuctions:GetSafeLink(link)
-	link = link and string.match(link, "|H(.-):([-0-9]+):([0-9]+)|h")
-	return link and string.gsub(link, ":0:0:0:0:0:0", "")
+	-- This will ensure that safe links can be passed back into this and
+	-- returned without changes.
+	if link and link == string.match(link, '.-:[-0-9]+[-:0-9]*') then
+		newLink = link
+	elseif link then
+		newLink = link and string.match(link, "|H(.-):([-0-9]+):([0-9]+)|h")
+	end
+	return newLink and string.gsub(newLink, ":0:0:0:0:0:0", "")
 end
 
 function QuickAuctions:GetEnchantLink(link)

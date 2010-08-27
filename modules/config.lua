@@ -4,6 +4,14 @@ local L = QuickAuctions.L
 local AceDialog, AceRegistry, options
 local idToGroup, groupID = {}, 1
 
+local function getIDFromGroup(groupName)
+	for id, group in pairs(idToGroup) do
+		if group == groupName then
+			return id
+		end
+	end
+end
+
 -- Make sure the item isn't soulbound
 local scanTooltip
 local resultsCache = {}
@@ -1059,13 +1067,21 @@ local function massAddItems(info, value)
 			local link = QuickAuctions:GetSafeLink(GetContainerItemLink(bag, slot))
 			local name = link and string.lower(GetItemInfo(link))
 			if( link and name and string.match(name, value) and not QuickAuctions.modules.Manage.reverseLookup[link] and not isSoulbound(bag, slot) ) then
-				QuickAuctions.db.global.groups[idToGroup[info[2]]][link] = true
-				options.args.groups.args[info[2]].args.remove.args.list.args[link] = removeItemTable
-				options.args.groups.args[info[2]].args.remove.args.list.args.help = nil
-				addItemsTable.args[link] = nil
+				Config:AddItem(idToGroup[info[2]], link)
 			end
 		end
 	end
+end
+
+function Config:AddItem(groupName, link, fromAPI)
+	local id = getIDFromGroup(groupName)
+	QuickAuctions.db.global.groups[groupName][link] = true
+	if options then
+		options.args.groups.args[id].args.remove.args.list.args[link] = removeItemTable
+		options.args.groups.args[id].args.remove.args.list.args.help = nil
+		addItemsTable.args[link] = nil
+	end
+	self:SendMessage("QA_GROUP_CHANGED", groupName, fromAPI==true)
 end
 
 function Config:RebuildItemList(updateOnChange)
@@ -1303,6 +1319,7 @@ local function loadGroupOptions()
 						set = function(info, value)
 							QuickAuctions.db.global.groups[value] = {}
 							updateGroups()
+							Config:SendMessage("QA_NEW_GROUP", value)
 						end,
 						get = false,
 					},
